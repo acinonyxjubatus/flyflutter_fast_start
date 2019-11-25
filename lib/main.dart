@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import 'Constants.dart';
-import 'WeatherWidget.dart';
-import 'model/ForecastResponse.dart';
+import 'constants.dart';
+import 'weather_widget.dart';
+import 'model/forecast_response.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 
