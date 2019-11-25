@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'model/ForecastResponse.dart';
+import 'model/forecast_response.dart';
 
 abstract class ListItemWidget {}
 
