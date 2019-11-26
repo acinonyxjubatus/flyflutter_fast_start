@@ -1,44 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:flyflutter_fast_start/MapPage.dart';
-import 'package:flyflutter_fast_start/WeatherForecastPage.dart';
+import 'package:flyflutter_fast_start/widgets/MapPage.dart';
+import 'package:flyflutter_fast_start/widgets/WeatherForecastPage.dart';
+import 'package:flyflutter_fast_start/model/placemark_local.dart';
+import 'package:flyflutter_fast_start/repositories/places/places_repository.dart';
 import 'package:geolocator/geolocator.dart';
 
 class PlacesPage extends StatefulWidget {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   PlacesPage({Key key}) : super(key: key);
 
-  _PlacesPageState createState() => _PlacesPageState();
+  _PlacesPageState createState() => _PlacesPageState(_scaffoldKey);
 }
 
 class _PlacesPageState extends State<PlacesPage> {
+  GlobalKey<ScaffoldState> _scaffoldKey;
 
-  // первоначальный тестовый список
-  List<Placemark> _places = [
-    Placemark(
-        name: 'Moscow',
-        country: 'Europe',
-        administrativeArea: 'Moscow',
-        position: Position(longitude: 37.6206, latitude: 55.7532)),
-    Placemark(
-        name: 'New York',
-        country: 'America',
-        administrativeArea: 'New York',
-        position: Position(longitude: -73.9739, latitude: 40.7715)),
-    Placemark(
-        name: 'Los Angeles',
-        country: 'America',
-        administrativeArea: 'Los_Angeles',
-        position: Position(longitude: -122.4663, latitude: 37.7705)),
-    Placemark(
-        name: 'Paris',
-        country: 'Europe',
-        administrativeArea: 'Paris',
-        position: Position(longitude: 2.2950, latitude: 48.8753)),
-    Placemark(
-        name: 'London',
-        country: 'Europe',
-        administrativeArea: 'London',
-        position: Position(longitude: -0.1254, latitude: 51.5011)),
-  ];
+  PlacesRepository placesRepository;
+
+  _PlacesPageState(GlobalKey scaffoldKey) {
+    this._scaffoldKey = scaffoldKey;
+  }
+
+  List<PlacemarkLocal> _placemarksList = List<PlacemarkLocal>();
+
+  @override
+  void initState() {
+    super.initState();
+    placesRepository = PlacesRepository();
+    _getPlaces();
+  }
+
+  void _getPlaces() {
+    var placesFuture = placesRepository.getPlaces();
+    placesFuture.then((places) {
+      setState(() {
+        _placemarksList = places;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,28 +69,24 @@ class _PlacesPageState extends State<PlacesPage> {
         ),
         Expanded(
             child: ListView.builder(
-          itemCount: _places.length,
-          itemBuilder: (context, index) {
-            final place = _places[index];
-            return Dismissible(
-              key: Key(place.name),
-              onDismissed: (direction) {
-                setState(() {
-                  _places.removeAt(index);
-                });
-                Scaffold.of(context)
-                    .showSnackBar(SnackBar(content: Text("$place removed")));
+              itemCount: _placemarksList.length,
+              itemBuilder: (context, index) {
+                final place = _placemarksList[index];
+                return Dismissible(
+                  key: Key(place.placemark.name),
+                  onDismissed: (direction) {
+                    _onItemRemove(place);
+                  },
+                  background: Container(
+                    color: Colors.red,
+                  ),
+                  child: ListTile(
+                    title: Text(_preparePlaceTitle(place.placemark)),
+                    onTap: () => _onItemTapped(place.placemark),
+                  ),
+                );
               },
-              background: Container(
-                color: Colors.red,
-              ),
-              child: ListTile(
-                title: Text(_preparePlaceTitle(place)),
-                onTap: () => _onItemTapped(place),
-              ),
-            );
-          },
-        )),
+            )),
       ]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -110,7 +106,7 @@ class _PlacesPageState extends State<PlacesPage> {
       placeTitle = placemark.country;
     }
     if (placemark.administrativeArea != null) {
-      placeTitle = placeTitle +", " + placemark.administrativeArea;
+      placeTitle = placeTitle + ", " + placemark.administrativeArea;
     } else if (placemark.name != null) {
       placeTitle = placeTitle + ", " + placemark.name;
     }
@@ -132,10 +128,18 @@ class _PlacesPageState extends State<PlacesPage> {
       MaterialPageRoute(builder: (context) => MapPage()),
     ); // ждем добавленное место
 
+    if (result != null) {
+      await placesRepository.addPlace(result);
+      _getPlaces();
+    }
+  }
+
+  void _onItemRemove(PlacemarkLocal placemarkLocal) async {
+    await placesRepository.deletePlacemark(placemarkLocal.id);
     setState(() {
-      if (result != null) {
-        _places.add(result);
-      }
+      _placemarksList.remove(placemarkLocal);
     });
+    Scaffold.of(context).showSnackBar(
+        SnackBar(content: Text("${placemarkLocal.placemark.name} removed")));
   }
 }

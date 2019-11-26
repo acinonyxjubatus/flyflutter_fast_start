@@ -13,6 +13,7 @@
         android:name="io.flutter.app.FlutterApplication"
         android:label="flyflutter_fast_start"
         android:icon="@mipmap/launcher_icon">
+
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="<INSERT YOUR API KEY HERE>"/>
         <activity

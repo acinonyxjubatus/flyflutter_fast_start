@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flyflutter_fast_start/LocationInfo.dart';
-import 'package:flyflutter_fast_start/PlacesPage.dart';
+import 'package:flyflutter_fast_start/widgets/PlacesPage.dart';
 import 'package:timezone/timezone.dart';
 
 void main() async {
