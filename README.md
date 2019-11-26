@@ -1,16 +1,16 @@
 # flyflutter_fast_start
 
-FlyFlutter. Fast start for Flutter developers
+<h1>FlyFlutter. Fast start for Flutter developers</h1>
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project is a codebase reference for the book "Flutter. Fast start for Flutter developer"
 
-A few resources to get you started if this is your first Flutter project:
+To run project
+ * clone repository
+ * run <i>flutter pub get</i>
+ * replace google maps key with your's in AndroidManifest.xml
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="<INSERT YOUR API KEY HERE>"/>
+ * replace WEATHER_APP_ID Openweathermap API Key with your's in Constants.dart:
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.

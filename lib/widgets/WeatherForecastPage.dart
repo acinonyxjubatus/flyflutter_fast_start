@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
+import 'package:flyflutter_fast_start/repositories/repositories.dart';
+import 'package:flyflutter_fast_start/widgets/tools.dart';
 import 'package:timezone/standalone.dart';
-
-import 'Constants.dart';
-import 'LocationInfo.dart';
-import 'WeatherWidget.dart';
-import 'model/ForecastResponse.dart';
 import 'package:http/http.dart' as http;
+
+import '../LocationInfo.dart';
+import 'WeatherWidget.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 
 class WeatherForecastPage extends StatefulWidget {
@@ -29,6 +29,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     this._scaffoldKey = scaffoldKey;
   }
 
+  WeatherRepository _weatherRepository;
   GlobalKey<ScaffoldState> _scaffoldKey;
 
   // локальная переменная местоположения
@@ -41,15 +42,17 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
   @override
   void initState() {
     super.initState();
+    var httpClient = http.Client();
+    var apiClient = WeatherApiClient(httpClient: httpClient);
+    _weatherRepository = WeatherRepository(weatherApiClient: apiClient);
     _refreshCompleter = Completer<void>();
-    _loadData();
+    _getWeather();
   }
 
   Future<void> _onRefresh() async {
-    var weatherFuture =
-        getWeather(_placemark.position.latitude, _placemark.position.longitude);
+    var weatherFuture = _weatherRepository.getWeather(_placemark);
     weatherFuture.then((_weatherForecast) {
-      initWeatherWithData(_weatherForecast);
+      handleRepositoryResponse(_weatherForecast);
     });
     return _refreshCompleter.future;
   }
@@ -59,27 +62,42 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    //получем инстанс InheritedWidget-a
-    var locationInfo = LocationInfo.of(context);
-    //читаем оттуда местоположение
-    _placemark = locationInfo?.placemark;
+    _initPlaceMark();
     // загружаем прогноз погоды
-    _loadData();
+    _getWeather();
   }
 
-  void _loadData() {
+
+  void _initPlaceMark() {
+    if (_placemark == null || _placemark?.position == null) {
+      //получем инстанс InheritedWidget-a
+      var locationInfo = LocationInfo.of(context);
+      //читаем оттуда мстоположение
+      _placemark = locationInfo?.placemark;
+    }
+  }
+
+  void _getWeather() {
     // если местоположения нет, то показываем progressBar
     _isLoading = true;
     if (_placemark == null) {
       return;
     }
-    var weatherFuture = getWeather(_placemark?.position?.latitude,
-        _placemark?.position?.longitude); // делаем запрос на получение погоды
+    var weatherFuture = _weatherRepository.getWeather(
+        _placemark); // делаем запрос на получение погоды
     weatherFuture.then((weatherData) {
       // берем value response из future погоды
-      initWeatherWithData(weatherData);
+      handleRepositoryResponse(weatherData);
       _isLoading = false;
     });
+  }
+
+  void handleRepositoryResponse(ResponseWrapper responseWrapper) {
+    if (responseWrapper.success) {
+      initWeatherWithData(responseWrapper.forecastResponse.list);
+    } else {
+      showSnackBar(context, _scaffoldKey, responseWrapper.errorResponse.message);
+    }
   }
 
   Widget get _pageToDisplay {
@@ -114,41 +132,6 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             }));
   }
 
-  Future<List<ListItem>> getWeather(double lat, double lng) async {
-    var queryParameters = {
-      // подготавливаем параметры запроса
-      'APPID': Constants.WEATHER_APP_ID,
-      'units': 'metric',
-      'lat': lat.toString(),
-      'lon': lng.toString(),
-    };
-
-    var uri = Uri.https(Constants.WEATHER_BASE_URL,
-        Constants.WEATHER_FORECAST_URL, queryParameters);
-    var response = await http.get(uri); // выполняем запрос и ждем результата
-
-    if (response.statusCode == 200) {
-      var forecastResponse =
-      ForecastResponse.fromMap(json.decode(response.body));
-      if (forecastResponse.cod == "200") {
-        // в случае успешного ответа парсим JSON и возвращаем список с прогнозом
-        return forecastResponse.list;
-      } else {
-        // в случае ошибки показываем ошибку
-        Scaffold.of(context).showSnackBar(SnackBar(
-          content: Text("Error ${forecastResponse.cod}"),
-        ));
-      }
-    } else {
-      // в случае ошибки показываем ошибку
-      _displaySnackBar(
-          context,
-          response?.reasonPhrase ??
-              "Error occured while loading data from server");
-    }
-    return List<ListItem>();
-  }
-
   void initWeatherWithData(List<ListItem> weatherData) {
     var itCurrentDay = DateTime.now();
 
@@ -157,7 +140,8 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
 
     try {
       var locationZone =
-          "${_placemark.country}/${_placemark.administrativeArea.replaceAll(" ", "_")}";
+          "${_placemark.country}/${_placemark.administrativeArea.replaceAll(
+          " ", "_")}";
       final placeTime =
       TZDateTime.from(itCurrentDay, getLocation(locationZone));
       placeTimeZoneOffset = placeTime.timeZoneOffset;
@@ -170,7 +154,15 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     weatherForecastLocal.add(DayHeading(itCurrentDay)); // first heading
     var itNextDay = DateTime.now().add(Duration(days: 1));
     itNextDay =
-        DateTime(itNextDay.year, itNextDay.month, itNextDay.day, 0, 0, 0, 0, 1);
+        DateTime(
+            itNextDay.year,
+            itNextDay.month,
+            itNextDay.day,
+            0,
+            0,
+            0,
+            0,
+            1);
     var iterator = weatherData.iterator;
     while (iterator.moveNext()) {
       var weatherItem = iterator.current as WeatherListBean;
@@ -179,7 +171,14 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
         itCurrentDay = itNextDay;
         itNextDay = itCurrentDay.add(Duration(days: 1));
         itNextDay = DateTime(
-            itNextDay.year, itNextDay.month, itNextDay.day, 0, 0, 0, 0, 1);
+            itNextDay.year,
+            itNextDay.month,
+            itNextDay.day,
+            0,
+            0,
+            0,
+            0,
+            1);
         weatherForecastLocal.add(DayHeading(itCurrentDay)); // next heading
       } else {
         weatherForecastLocal.add(weatherItem);
@@ -211,8 +210,4 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     return placeTitle ?? "";
   }
 
-  _displaySnackBar(BuildContext context, String errorText) {
-    final snackBar = SnackBar(content: Text(errorText));
-    _scaffoldKey.currentState.showSnackBar(snackBar);
-  }
 }
