@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flyflutter_fast_start/counter_bloc.dart';
+import 'package:flyflutter_fast_start/counter_event.dart';
 
 void main() => runApp(MyApp());
 
@@ -6,28 +8,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Counter',
+      title: 'StatelessWidget sample',
       theme: ThemeData(
         primarySwatch: Colors.amber,
       ),
       home: Scaffold(
-        backgroundColor: Colors.amber[300],
-        appBar: AppBar(
-          title: Text('Counter on Flutter'),
-        ),
-        body: Center(
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  HintLabel('tap - to decrement'),
-                  SizedBox(height: 8.0),
-                  CounterWidget(),
-                  SizedBox(height: 8.0),
-                  HintLabel('tap + to increment')
-                ])),
-      ),
+          backgroundColor: Colors.amber[300],
+          appBar: AppBar(
+            title: Text('Labels'),
+          ),
+          body: Center(child: CounterWidget())),
     );
   }
 }
@@ -38,7 +28,7 @@ class CounterWidget extends StatefulWidget {
 }
 
 class _CounterWidgetState extends State<CounterWidget> {
-  int _count = 42;
+  final _bloc = CounterBloc();
 
   @override
   Widget build(BuildContext context) {
@@ -52,48 +42,37 @@ class _CounterWidgetState extends State<CounterWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-                onPressed: () {
-                  _decrement();
-                },
-                icon: Icon(Icons.remove)),
-            Text('$_count', style: TextStyle(fontSize: 20.0)),
-            IconButton(
-                onPressed: () {
-                  _increment();
-                },
-                icon: Icon(Icons.add)),
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: GestureDetector(
+                  onTap: () {
+                    _bloc.counterEventSink.add(DecrementEvent());
+                  },
+                  child: Icon(Icons.remove)),
+            ),
+            StreamBuilder(
+              stream: _bloc.counter,
+              initialData: 0,
+              builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                return Text('${snapshot.data}',
+                    style: TextStyle(fontSize: 20.0));
+              },
+            ),
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: GestureDetector(
+                  onTap: () {
+                    _bloc.counterEventSink.add(IncrementEvent());
+                  },
+                  child: Icon(Icons.add)),
+            ),
           ],
         ));
   }
 
-  void _increment() {
-    setState(() {
-      _count++;
-    });
-  }
-
-  void _decrement() {
-    setState(() {
-      _count--;
-    });
-  }
-}
-
-class HintLabel extends StatelessWidget {
-  final String text;
-
-  const HintLabel(this.text);
-
   @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(color: Colors.amber[200]),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(text,
-            style: TextStyle(color: Colors.grey[700])),
-      ),
-    );
+  void dispose() {
+    super.dispose();
+    _bloc.dispose();
   }
 }
