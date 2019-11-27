@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flyflutter_fast_start/LocationInfo.dart';
+import 'package:flyflutter_fast_start/location_info.dart';
 import 'package:flyflutter_fast_start/repositories/repositories.dart';
-import 'package:flyflutter_fast_start/widgets/PlacesPage.dart';
+import 'package:flyflutter_fast_start/widgets/places_page.dart';
+import 'package:injector/injector.dart';
 import 'package:timezone/timezone.dart';
 import 'package:bloc/bloc.dart';
 import 'package:http/http.dart' as http;
@@ -24,29 +25,45 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   var byteData = await rootBundle.load('packages/timezone/data/2019b.tzf');
   initializeDatabase(byteData.buffer.asUint8List());
+  initInjector();
 
   BlocSupervisor.delegate = SimpleBlocDelegate();
-
-  final WeatherRepository weatherRepository = WeatherRepository(
-    weatherApiClient: WeatherApiClient(
-      httpClient: http.Client(),
-    ),
-  );
-
-  final PlacesRepository placesRepository = PlacesRepository();
 
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider<WeatherBloc>(
-        builder: (context) => WeatherBloc(weatherRepository: weatherRepository),
+        builder: (context) => WeatherBloc(),
       ),
       BlocProvider<PlacesBloc>(
-        builder: (context) => PlacesBloc(placesRepository: placesRepository),
+        builder: (context) => PlacesBloc(),
       ),
     ],
     child: MyApp(),
   ));
 //  runApp(MyApp(weatherRepository: weatherRepository, placesRepository: placesRepository));
+}
+
+void initInjector() {
+  // получаем статический инстанс инжектора
+  Injector injector = Injector.appInstance;
+  // регистрируем объект http.Client-а в дереве зависимостей
+  injector.registerSingleton<http.Client>((injector) {
+    return http.Client();
+  });
+  // регистрируем объект WeatherApiClient-а в дереве зависимостей
+  injector.registerSingleton<WeatherApiClient>((injector) {
+    var httpClient = injector.getDependency<http.Client>();
+    return WeatherApiClient(httpClient: httpClient);
+  });
+  // регистрируем объект WeatherRepository-а в дереве зависимостей
+  injector.registerSingleton<WeatherRepository>((injector) {
+    var webApiClient = injector.getDependency<WeatherApiClient>();
+    return WeatherRepository(weatherApiClient: webApiClient);
+  });
+  // регистрируем объект PlacesRepository-а в дереве зависимостей
+  injector.registerSingleton<PlacesRepository>((injector) {
+    return PlacesRepository();
+  });
 }
 
 class MyApp extends StatelessWidget {

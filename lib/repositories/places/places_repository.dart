@@ -41,7 +41,7 @@ class PlacesRepository {
     var placesFuture = DBProvider.db.getAllPlacemarks();
     var placesList = await placesFuture;
     if (placesList.isEmpty) {
-      putPlaces(_initPlaces);
+      await putPlaces(_initPlaces);
     }
     return await DBProvider.db.getAllPlacemarks();
   }

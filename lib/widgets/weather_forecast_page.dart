@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flyflutter_fast_start/LocationInfo.dart';
+import 'package:flyflutter_fast_start/location_info.dart';
 import 'package:flyflutter_fast_start/blocs/weather/weather_bloc.dart';
-import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
-import 'package:flyflutter_fast_start/widgets/WeatherWidget.dart';
+import 'package:flyflutter_fast_start/model/forecast_response.dart';
+import 'package:flyflutter_fast_start/widgets/weather_widget.dart';
 import 'package:timezone/standalone.dart';
 
 import 'tools.dart';
@@ -73,18 +73,23 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     return RefreshIndicator(
         onRefresh: () {
           BlocProvider.of<WeatherBloc>(context).add(
-            RefreshWeather(placemark: _placemark), // добавляем в блок событие обновления погоды
+            RefreshWeather(
+                placemark:
+                _placemark), // добавляем в блок событие обновления погоды
           );
           return _refreshCompleter.future;
         },
         child: ListView.builder(
+            key: Key('weather_listview'),
             itemCount: _weatherForecast == null ? 0 : _weatherForecast.length,
             itemBuilder: (BuildContext context, int index) {
               final item = _weatherForecast[index];
+
+              final _key = Key("weatherListItem_${index.toString()}");
               if (item is WeatherListBean) {
-                return WeatherListItem(item);
+                return WeatherListItem(_key, item);
               } else if (item is DayHeading) {
-                return HeadingListItem(item);
+                return HeadingListItem(_key, item);
               } else
                 throw Exception("wrong type");
             }));

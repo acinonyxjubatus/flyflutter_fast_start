@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flyflutter_fast_start/model/placemark_local.dart';
 import 'package:flyflutter_fast_start/repositories/places/places_repository.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:injector/injector.dart';
 import 'package:meta/meta.dart';
 
 part 'places_event.dart';
@@ -11,11 +12,12 @@ part 'places_event.dart';
 part 'places_state.dart';
 
 class PlacesBloc extends Bloc<PlacesEvent, PlacesState> {
+  PlacesRepository placesRepository;
 
-  final PlacesRepository placesRepository;
-
-  PlacesBloc({@required this.placesRepository})
-      : assert(placesRepository != null);
+  PlacesBloc() {
+    Injector injector = Injector.appInstance;
+    placesRepository = injector.getDependency<PlacesRepository>();
+  }
 
   @override
   PlacesState get initialState => EmptyPlacesState();

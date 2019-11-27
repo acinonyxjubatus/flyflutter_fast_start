@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
+import 'package:flyflutter_fast_start/model/forecast_response.dart';
 import 'package:intl/intl.dart';
 
 abstract class ListItemWidget {}
@@ -9,7 +9,7 @@ class WeatherListItem extends StatelessWidget implements ListItemWidget {
 
   final WeatherListBean weather;
 
-  WeatherListItem(this.weather);
+  WeatherListItem(Key key, this.weather) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class HeadingListItem extends StatelessWidget implements ListItemWidget {
   static var _dateFormatWeekDay = DateFormat('EEEE, MMM dd');
   final DayHeading dayHeading;
 
-  HeadingListItem(this.dayHeading);
+  HeadingListItem(Key key, this.dayHeading) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

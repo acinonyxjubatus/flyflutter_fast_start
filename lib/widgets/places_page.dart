@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flyflutter_fast_start/blocs/places/places_bloc.dart';
 import 'package:flyflutter_fast_start/model/placemark_local.dart';
-import 'package:flyflutter_fast_start/widgets/MapPage.dart';
-import 'package:flyflutter_fast_start/widgets/WeatherForecastPage.dart';
+import 'package:flyflutter_fast_start/widgets/map_page.dart';
+import 'package:flyflutter_fast_start/widgets/weather_forecast_page.dart';
 import 'package:flyflutter_fast_start/widgets/tools.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -76,6 +76,7 @@ class _PlacesPageState extends State<PlacesPage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text("Current position",
+                  key: Key('сurrent_position'),
                   textAlign: TextAlign.left,
                   style: new TextStyle(
                     fontSize: 16.0,
