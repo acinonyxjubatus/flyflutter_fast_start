@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
+import 'package:flyflutter_fast_start/model/forecast_response.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:http/http.dart' as http;
@@ -8,7 +8,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 import 'dart:convert';
 
-import '../../Constants.dart';
+import '../../constants.dart';
 
 class WeatherApiClient {
   final http.Client httpClient;

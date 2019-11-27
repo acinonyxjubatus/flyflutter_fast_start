@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
-import 'package:flyflutter_fast_start/repositories/repositories.dart';
-import 'package:flyflutter_fast_start/widgets/tools.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flyflutter_fast_start/location_info.dart';
+import 'package:flyflutter_fast_start/blocs/weather/weather_bloc.dart';
+import 'package:flyflutter_fast_start/model/forecast_response.dart';
+import 'package:flyflutter_fast_start/widgets/weather_widget.dart';
 import 'package:timezone/standalone.dart';
-import 'package:http/http.dart' as http;
 
-import '../LocationInfo.dart';
-import 'WeatherWidget.dart';
+import 'tools.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
@@ -29,44 +29,36 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     this._scaffoldKey = scaffoldKey;
   }
 
-  WeatherRepository _weatherRepository;
   GlobalKey<ScaffoldState> _scaffoldKey;
 
-  // локальная переменная местоположения
+  /// локальная переменная местоположения
   Placemark _placemark;
 
-  bool _isLoading = false;
-
   Completer<void> _refreshCompleter;
+
+  List<ListItem> _weatherForecast;
 
   @override
   void initState() {
     super.initState();
-    var httpClient = http.Client();
-    var apiClient = WeatherApiClient(httpClient: httpClient);
-    _weatherRepository = WeatherRepository(weatherApiClient: apiClient);
     _refreshCompleter = Completer<void>();
-    _getWeather();
   }
 
-  Future<void> _onRefresh() async {
-    var weatherFuture = _weatherRepository.getWeather(_placemark);
-    weatherFuture.then((_weatherForecast) {
-      handleRepositoryResponse(_weatherForecast);
-    });
-    return _refreshCompleter.future;
-  }
-
-  // метод вызывается, когда состояние объектов, от которых зависит этот виджет, меняется
+  /// метод вызывается, когда состояние объектов, от которых зависит этот виджет, меняется
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    _initPlaceMark();
     // загружаем прогноз погоды
     _getWeather();
   }
 
+  void _getWeather() {
+    _initPlaceMark();
+    if (_placemark != null) {
+      BlocProvider.of<WeatherBloc>(context)
+          .add(FetchWeather(placemark: _placemark)); // добавляем в блок событие загрузки погоды
+    }
+  }
 
   void _initPlaceMark() {
     if (_placemark == null || _placemark?.position == null) {
@@ -77,48 +69,14 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     }
   }
 
-  void _getWeather() {
-    // если местоположения нет, то показываем progressBar
-    _isLoading = true;
-    if (_placemark == null) {
-      return;
-    }
-    var weatherFuture = _weatherRepository.getWeather(
-        _placemark); // делаем запрос на получение погоды
-    weatherFuture.then((weatherData) {
-      // берем value response из future погоды
-      handleRepositoryResponse(weatherData);
-      _isLoading = false;
-    });
-  }
-
-  void handleRepositoryResponse(ResponseWrapper responseWrapper) {
-    if (responseWrapper.success) {
-      initWeatherWithData(responseWrapper.forecastResponse.list);
-    } else {
-      showSnackBar(context, _scaffoldKey, responseWrapper.errorResponse.message);
-    }
-  }
-
-  Widget get _pageToDisplay {
-    if (_isLoading) {
-      return _loadingView;
-    } else {
-      return _contentView;
-    }
-  }
-
-  Widget get _loadingView {
-    return Center(
-      child: CircularProgressIndicator(), // виджет прогресса
-    );
-  }
-
-  List<ListItem> _weatherForecast;
-
-  Widget get _contentView {
+  Widget get _weatherListView {
     return RefreshIndicator(
-        onRefresh: _onRefresh,
+        onRefresh: () {
+          BlocProvider.of<WeatherBloc>(context).add(
+            RefreshWeather(placemark: _placemark), // добавляем в блок событие обновления погоды
+          );
+          return _refreshCompleter.future;
+        },
         child: ListView.builder(
             itemCount: _weatherForecast == null ? 0 : _weatherForecast.length,
             itemBuilder: (BuildContext context, int index) {
@@ -132,6 +90,43 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             }));
   }
 
+  Widget get _refreshWrapper {
+    return BlocListener<WeatherBloc, WeatherState>(
+        listener: (context, state) {
+          if (state is WeatherLoaded) {
+            _refreshCompleter?.complete();
+            _refreshCompleter = Completer();
+          } else if (state is WeatherError && state.errorCause != null){
+            // в случае ошибки показываем ошибку
+            Scaffold.of(context).showSnackBar(SnackBar(
+              content:
+              Text("Error ${state.errorCause}"),
+            ));
+          }
+        },
+        child: _contentView);
+  }
+
+  Widget get _contentView {
+    return BlocBuilder<WeatherBloc, WeatherState>(builder: (context, state) {
+      if (state is WeatherEmpty) {
+        return errorView(context, 'No data received. Pull to refresh');
+      }
+      if (state is WeatherLoading) {
+        return loadingView();
+      }
+      if (state is WeatherError) {
+        return errorView(context, state.errorMessage);
+      }
+      if (state is WeatherLoaded) {
+        final weatherResponse = state.forecastResponse;
+        initWeatherWithData(weatherResponse.list);
+        return _weatherListView;
+      }
+      return null;
+    });
+  }
+
   void initWeatherWithData(List<ListItem> weatherData) {
     var itCurrentDay = DateTime.now();
 
@@ -140,8 +135,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
 
     try {
       var locationZone =
-          "${_placemark.country}/${_placemark.administrativeArea.replaceAll(
-          " ", "_")}";
+          "${_placemark.country}/${_placemark.administrativeArea?.replaceAll(" ", "_")}";
       final placeTime =
       TZDateTime.from(itCurrentDay, getLocation(locationZone));
       placeTimeZoneOffset = placeTime.timeZoneOffset;
@@ -154,15 +148,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     weatherForecastLocal.add(DayHeading(itCurrentDay)); // first heading
     var itNextDay = DateTime.now().add(Duration(days: 1));
     itNextDay =
-        DateTime(
-            itNextDay.year,
-            itNextDay.month,
-            itNextDay.day,
-            0,
-            0,
-            0,
-            0,
-            1);
+        DateTime(itNextDay.year, itNextDay.month, itNextDay.day, 0, 0, 0, 0, 1);
     var iterator = weatherData.iterator;
     while (iterator.moveNext()) {
       var weatherItem = iterator.current as WeatherListBean;
@@ -171,22 +157,13 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
         itCurrentDay = itNextDay;
         itNextDay = itCurrentDay.add(Duration(days: 1));
         itNextDay = DateTime(
-            itNextDay.year,
-            itNextDay.month,
-            itNextDay.day,
-            0,
-            0,
-            0,
-            0,
-            1);
+            itNextDay.year, itNextDay.month, itNextDay.day, 0, 0, 0, 0, 1);
         weatherForecastLocal.add(DayHeading(itCurrentDay)); // next heading
       } else {
         weatherForecastLocal.add(weatherItem);
       }
     }
-    setState(() {
-      _weatherForecast = weatherForecastLocal;
-    });
+    _weatherForecast = weatherForecastLocal;
   }
 
   @override
@@ -196,7 +173,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
         appBar: AppBar(
           title: Text(getPlaceTitle()),
         ),
-        body: _pageToDisplay);
+        body: _refreshWrapper);
   }
 
   String getPlaceTitle() {
@@ -209,5 +186,4 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     }
     return placeTitle ?? "";
   }
-
 }

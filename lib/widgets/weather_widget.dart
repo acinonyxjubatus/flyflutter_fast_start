@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flyflutter_fast_start/model/ForecastResponse.dart';
+import 'package:flyflutter_fast_start/model/forecast_response.dart';
 import 'package:intl/intl.dart';
 
 abstract class ListItemWidget {}
