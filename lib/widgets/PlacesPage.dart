@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flyflutter_fast_start/blocs/places/places_bloc.dart';
+import 'package:flyflutter_fast_start/model/placemark_local.dart';
 import 'package:flyflutter_fast_start/widgets/MapPage.dart';
 import 'package:flyflutter_fast_start/widgets/WeatherForecastPage.dart';
-import 'package:flyflutter_fast_start/model/placemark_local.dart';
-import 'package:flyflutter_fast_start/repositories/places/places_repository.dart';
+import 'package:flyflutter_fast_start/widgets/tools.dart';
 import 'package:geolocator/geolocator.dart';
 
 class PlacesPage extends StatefulWidget {
@@ -14,30 +16,102 @@ class PlacesPage extends StatefulWidget {
 }
 
 class _PlacesPageState extends State<PlacesPage> {
-  GlobalKey<ScaffoldState> _scaffoldKey;
-
-  PlacesRepository placesRepository;
-
   _PlacesPageState(GlobalKey scaffoldKey) {
     this._scaffoldKey = scaffoldKey;
   }
 
-  List<PlacemarkLocal> _placemarksList = List<PlacemarkLocal>();
+  List<PlacemarkLocal> _placemarksList;
+
+  GlobalKey<ScaffoldState> _scaffoldKey;
 
   @override
   void initState() {
     super.initState();
-    placesRepository = PlacesRepository();
-    _getPlaces();
+    BlocProvider.of<PlacesBloc>(context).add(FetchPlaces());
   }
 
-  void _getPlaces() {
-    var placesFuture = placesRepository.getPlaces();
-    placesFuture.then((places) {
-      setState(() {
-        _placemarksList = places;
-      });
+  Widget get _contentView {
+    return BlocBuilder<PlacesBloc, PlacesState>(builder: (context, state) {
+      if (state is EmptyPlacesState) {
+        return errorView(
+            context, 'No places  yet. Tap Add button to create one');
+      }
+      if (state is LoadingPlacesState) {
+        return loadingView();
+      }
+      if (state is ErrorPlacesState) {
+        return errorView(context, "Exception while reading places");
+      }
+      if (state is ErrorAddingPlaceState) {
+        showSnackBar(context, _scaffoldKey, "Exception while adding place");
+      }
+      if (state is LoadedPlacesState) {
+        _placemarksList = state.placemarks;
+      }
+      if (state is RemovedPlaceState) {
+        var index = -1;
+        for (int i = 0; i < _placemarksList.length; i++) {
+          if (_placemarksList[i].id == state.id) {
+            index = i;
+            break;
+          }
+        }
+        if (index > 0) {
+          _placemarksList.removeAt(index);
+        }
+      }
+      if (state is ErrorRemovingPlaceState) {
+        showSnackBar(context, _scaffoldKey, "Exception while deleting place");
+      }
+      return _placesListView;
     });
+  }
+
+  Widget get _placesListView {
+    return Column(children: <Widget>[
+      Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
+        Expanded(
+          child: InkWell(
+            onTap: () => _onItemTapped(null),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text("Current position",
+                  textAlign: TextAlign.left,
+                  style: new TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.black,
+                  )),
+            ),
+          ),
+        )
+      ]),
+      Divider(
+        height: 4,
+        thickness: 2,
+      ),
+      Expanded(
+          child: ListView.builder(
+            itemCount: _placemarksList.length,
+            itemBuilder: (context, index) {
+              final place = _placemarksList[index];
+              return Dismissible(
+                key: Key(place.placemark.name),
+                onDismissed: (direction) {
+                  _onRemoveItem(index);
+                  Scaffold.of(context)
+                      .showSnackBar(SnackBar(content: Text("$place removed")));
+                },
+                background: Container(
+                  color: Colors.red,
+                ),
+                child: ListTile(
+                  title: Text(_preparePlaceTitle(place.placemark)),
+                  onTap: () => _onItemTapped(place.placemark),
+                ),
+              );
+            },
+          )),
+    ]);
   }
 
   @override
@@ -46,48 +120,7 @@ class _PlacesPageState extends State<PlacesPage> {
       appBar: AppBar(
         title: Text("Places"),
       ),
-      body: Column(children: <Widget>[
-        Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
-          Expanded(
-            child: InkWell(
-              onTap: () => _onItemTapped(null),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text("Current position",
-                    textAlign: TextAlign.left,
-                    style: new TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.black,
-                    )),
-              ),
-            ),
-          )
-        ]),
-        Divider(
-          height: 4,
-          thickness: 2,
-        ),
-        Expanded(
-            child: ListView.builder(
-              itemCount: _placemarksList.length,
-              itemBuilder: (context, index) {
-                final place = _placemarksList[index];
-                return Dismissible(
-                  key: Key(place.placemark.name),
-                  onDismissed: (direction) {
-                    _onItemRemove(place);
-                  },
-                  background: Container(
-                    color: Colors.red,
-                  ),
-                  child: ListTile(
-                    title: Text(_preparePlaceTitle(place.placemark)),
-                    onTap: () => _onItemTapped(place.placemark),
-                  ),
-                );
-              },
-            )),
-      ]),
+      body: _contentView,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _onAddNew();
@@ -128,18 +161,12 @@ class _PlacesPageState extends State<PlacesPage> {
       MaterialPageRoute(builder: (context) => MapPage()),
     ); // ждем добавленное место
 
-    if (result != null) {
-      await placesRepository.addPlace(result);
-      _getPlaces();
-    }
+    BlocProvider.of<PlacesBloc>(context).add(AddPlaceEvent(placemark: result));
   }
 
-  void _onItemRemove(PlacemarkLocal placemarkLocal) async {
-    await placesRepository.deletePlacemark(placemarkLocal.id);
-    setState(() {
-      _placemarksList.remove(placemarkLocal);
-    });
-    Scaffold.of(context).showSnackBar(
-        SnackBar(content: Text("${placemarkLocal.placemark.name} removed")));
+  /// обработчик удаления элемента из списка
+  void _onRemoveItem(int index) {
+    BlocProvider.of<PlacesBloc>(context)
+        .add(RemovePlaceEvent(placemarkLocal: _placemarksList[index]));
   }
 }
