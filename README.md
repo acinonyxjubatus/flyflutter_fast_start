@@ -1,4 +1,4 @@
-<h1>FlyFlutter. Fast start for Flutter developers</h1>
+<h1>Flutter. Fast start for Flutter developers</h1>
 
 ## Getting Started
 
