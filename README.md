@@ -1,5 +1,3 @@
-# flyflutter_fast_start
-
 <h1>FlyFlutter. Fast start for Flutter developers</h1>
 
 ## Getting Started
