@@ -33,9 +33,15 @@ dependencies:
   sqflite:
   path_provider: ^1.4.2
   flutter_bloc: 2.0.0
+  injector: ^1.0.8
 
 dev_dependencies:
-  flutter_launcher_icons: ^0.7.4
+  flutter_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
+  mockito: 4.1.1
+  test: any
 
 flutter_icons:
   android: "launcher_icon"
