@@ -32,6 +32,7 @@ dependencies:
   equatable: ^0.6.1
   sqflite:
   path_provider: ^1.4.2
+  flutter_bloc: 2.0.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.7.4
