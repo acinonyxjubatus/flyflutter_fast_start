@@ -10,4 +10,4 @@ To run project
             android:value="<INSERT YOUR API KEY HERE>"/>
  * replace WEATHER_APP_ID Openweathermap API Key with your's in constants.dart:
 
-![FlyFlutter Fast Start Showcase](https://github.com/acinonyxjubatus/flyflutter_fast_start/blob/master/showcase.gif|width=300px)
+<img src="https://github.com/acinonyxjubatus/flyflutter_fast_start/blob/master/showcase.gif" alt="FlyFlutter Fast Start Showcase" width="300">
