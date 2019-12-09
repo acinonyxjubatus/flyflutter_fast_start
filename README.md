@@ -1,4 +1,4 @@
-<h1>Flutter. Fast start for Flutter developers</h1>
+<h1>Fast start for Flutter developers</h1>
 
 This project is a codebase reference for the book "Flutter. Fast start for Flutter developer"
 
