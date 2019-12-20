@@ -43,7 +43,7 @@ class _PlacesPageState extends State<PlacesPage> {
         return errorView(context, "Exception while reading places");
       }
       if (state is ErrorAddingPlaceState) {
-        showSnackBar(context, _scaffoldKey, "Exception while adding place");
+        showSnackBar(_scaffoldKey, "Exception while adding place");
       }
       if (state is LoadedPlacesState) {
         _placemarksList = state.placemarks;
@@ -61,7 +61,7 @@ class _PlacesPageState extends State<PlacesPage> {
         }
       }
       if (state is ErrorRemovingPlaceState) {
-        showSnackBar(context, _scaffoldKey, "Exception while deleting place");
+        showSnackBar(_scaffoldKey, "Exception while deleting place");
       }
       return _placesListView;
     });
