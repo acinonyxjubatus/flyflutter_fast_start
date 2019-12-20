@@ -96,7 +96,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     if (responseWrapper.success) {
       initWeatherWithData(responseWrapper.forecastResponse.list);
     } else {
-      showSnackBar(context, _scaffoldKey, responseWrapper.errorResponse.message);
+      showSnackBar(_scaffoldKey, responseWrapper.errorResponse.message);
     }
   }
 

@@ -14,7 +14,7 @@ Widget loadingView() {
   );
 }
 
-showSnackBar(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey,
+showSnackBar(GlobalKey<ScaffoldState> scaffoldKey,
     String errorText) {
   final snackBar = SnackBar(content: Text(errorText));
   scaffoldKey.currentState.showSnackBar(snackBar);
