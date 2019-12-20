@@ -29,6 +29,9 @@ class WeatherForecastPage extends StatefulWidget {
 }
 
 class _WeatherForecastPageState extends State<WeatherForecastPage> {
+
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   final double latitude;
   final double longitude;
 
@@ -57,15 +60,11 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
         return forecastResponse.list;
       } else {
         // в случае ошибки показываем ошибку
-        Scaffold.of(context).showSnackBar(SnackBar(
-          content: Text("Error ${forecastResponse.cod}"),
-        ));
+        _displaySnackBar("Error ${forecastResponse.cod}");
       }
     } else {
       // в случае ошибки показываем ошибку
-      Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text("Error occured while loading data from server"),
-      ));
+      _displaySnackBar("Error occured while loading data from server");
     }
     return List<ListItem>();
   }
@@ -109,6 +108,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
           primarySwatch: Colors.amber,
         ),
         home: Scaffold(
+            key: _scaffoldKey,
             appBar: AppBar(
               title: Text('Weather forecast'),
             ),
@@ -123,5 +123,10 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                   } else
                     throw Exception("wrong type");
                 })));
+  }
+
+  _displaySnackBar(String message) {
+    final snackBar = SnackBar(content: Text(message));
+    _scaffoldKey.currentState.showSnackBar(snackBar);
   }
 }
