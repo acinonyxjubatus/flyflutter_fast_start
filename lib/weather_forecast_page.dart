@@ -142,7 +142,6 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     } else {
       // в случае ошибки показываем ошибку
       _displaySnackBar(
-          context,
           response?.reasonPhrase ??
               "Error occured while loading data from server");
     }
@@ -211,7 +210,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     return placeTitle ?? "";
   }
 
-  _displaySnackBar(BuildContext context, String errorText) {
+  _displaySnackBar(String errorText) {
     final snackBar = SnackBar(content: Text(errorText));
     _scaffoldKey.currentState.showSnackBar(snackBar);
   }
