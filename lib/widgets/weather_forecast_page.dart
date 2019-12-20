@@ -103,10 +103,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             _refreshCompleter = Completer();
           } else if (state is WeatherError && state.errorCause != null){
             // в случае ошибки показываем ошибку
-            Scaffold.of(context).showSnackBar(SnackBar(
-              content:
-              Text("Error ${state.errorCause}"),
-            ));
+            showSnackBar(_scaffoldKey, "Error ${state.errorCause}");
           }
         },
         child: _contentView);
