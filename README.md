@@ -1,6 +1,8 @@
 <h1>Fast start for Flutter developers</h1>
 
-This project is a codebase reference for the book "Fast start for Flutter developer" ("Быстрый старт Flutter разработчика")
+This project is a codebase reference for the book "Flutter Quick Start. Step-by-step tutorial for crossplatform mobile developers". Branches are streamlined according with book chapters.
+
+Этот репозиторий представляет собой кодовую базу к книге "Быстрый старт Flutter разработчика". Ветки упорядочены в соответствии с главами пособия.
 
 To run project
  * clone repository
